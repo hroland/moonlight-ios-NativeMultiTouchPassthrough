@@ -70,14 +70,23 @@
     if (self.ipv6Address != nil) {
         parentHost.ipv6Address = self.ipv6Address;
     }
-    // try to fix invalid mac happens in some cases
-    // 添加主机crash问题重点关注
-    if (!(self.mac == nil || [self.mac isEqualToString:@"00:00:00:00:00:00"])) parentHost.mac = self.mac;
+    // Handle MAC address propagation
+    if (self.mac != nil && ![self.mac isEqualToString:@"00:00:00:00:00:00"]) {
+        parentHost.mac = self.mac;
+    } else if (self.mac == nil) {
+        // if self.mac is explicitly nil (e.g., user cleared it), set parentHost.mac to nil
+        parentHost.mac = nil;
+    } // if self.mac is "00:00:00:00:00:00", we don't update parentHost.mac, leaving it as is or nil
+
+    if (self.uuid != nil) {
+        parentHost.uuid = self.uuid;
+    }
     if (self.serverCert != nil) {
         parentHost.serverCert = self.serverCert;
     }
-    parentHost.name = self.name;
-    parentHost.uuid = self.uuid;
+    if (self.name != nil) {
+        parentHost.name = self.name;
+    }
     parentHost.serverCodecModeSupport = self.serverCodecModeSupport;
     parentHost.pairState = [NSNumber numberWithInt:self.pairState];
 }

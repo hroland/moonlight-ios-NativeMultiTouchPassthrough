@@ -554,6 +554,48 @@ static NSMutableSet* hostList;
         }]];
     }
 #endif
+    [longClickAlert addAction:[UIAlertAction actionWithTitle:[LocalizationHelper localizedStringForKey:@"Set MAC Address"] style:UIAlertActionStyleDefault handler:^(UIAlertAction* action) {
+        UIAlertController* setMacAlertController = [UIAlertController alertControllerWithTitle:[LocalizationHelper localizedStringForKey:@"Set MAC Address"] message:[LocalizationHelper localizedStringForKey:@"Enter the MAC address for this host (e.g., AA:BB:CC:11:22:33)"] preferredStyle:UIAlertControllerStyleAlert];
+
+        [setMacAlertController addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+            textField.placeholder = [LocalizationHelper localizedStringForKey:@"MAC Address"];
+            textField.autocapitalizationType = UITextAutocapitalizationTypeAllCharacters;
+            if (host.mac != nil && ![host.mac isEqualToString:@"00:00:00:00:00:00"]) {
+                textField.text = host.mac;
+            }
+        }];
+
+        [setMacAlertController addAction:[UIAlertAction actionWithTitle:[LocalizationHelper localizedStringForKey:@"Cancel"] style:UIAlertActionStyleCancel handler:nil]];
+        [setMacAlertController addAction:[UIAlertAction actionWithTitle:[LocalizationHelper localizedStringForKey:@"Save"] style:UIAlertActionStyleDefault handler:^(UIAlertAction* saveAction){
+            NSString* macAddress = [((UITextField*)[[setMacAlertController textFields] objectAtIndex:0]).text trim];
+
+            if (macAddress != nil && ![macAddress isEqualToString:@""]) {
+                NSString *macRegex = @"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$";
+                NSPredicate *macTest = [NSPredicate predicateWithFormat:@"SELF MATCHES %@", macRegex];
+                if ([macTest evaluateWithObject:macAddress]) {
+                    host.mac = [macAddress uppercaseString];
+                    Log(LOG_I, @"Set MAC for host %@ to: %@", host.name, host.mac);
+
+                    DataManager* dataMan = [[DataManager alloc] init];
+                    [dataMan updateHost:host];
+                } else {
+                    Log(LOG_W, @"Invalid MAC address format entered: %@ for host %@", macAddress, host.name);
+                    UIAlertController* errorAlert = [UIAlertController alertControllerWithTitle:[LocalizationHelper localizedStringForKey:@"Invalid MAC Address"] message:[LocalizationHelper localizedStringForKey:@"The MAC address format was invalid. Please use format like AA:BB:CC:11:22:33."] preferredStyle:UIAlertControllerStyleAlert];
+                    [errorAlert addAction:[UIAlertAction actionWithTitle:[LocalizationHelper localizedStringForKey:@"Ok"] style:UIAlertActionStyleDefault handler:nil]];
+                    [[self activeViewController] presentViewController:errorAlert animated:YES completion:nil];
+                }
+            } else {
+                 host.mac = nil;
+                 Log(LOG_I, @"Cleared MAC for host %@", host.name);
+                 DataManager* dataMan = [[DataManager alloc] init];
+                 [dataMan updateHost:host];
+            }
+        }]];
+        setMacAlertController.popoverPresentationController.sourceView = view;
+        setMacAlertController.popoverPresentationController.sourceRect = CGRectMake(view.bounds.size.width / 2.0, view.bounds.size.height / 2.0, 1.0, 1.0);
+        [[self activeViewController] presentViewController:setMacAlertController animated:YES completion:nil];
+    }]];
+
     [longClickAlert addAction:[UIAlertAction actionWithTitle:[LocalizationHelper localizedStringForKey:@"Remove Host"] style:UIAlertActionStyleDestructive handler:^(UIAlertAction* action) {   // host removed here
         [self->_discMan removeHostFromDiscovery:host];
         DataManager* dataMan = [[DataManager alloc] init];

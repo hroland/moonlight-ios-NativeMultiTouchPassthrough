@@ -39,6 +39,18 @@ static const int dynamicPorts[numDynamicPorts] = {
 }
 
 + (void) wakeHost:(TemporaryHost*)host {
+    if (host.mac == nil || [host.mac isEqualToString:@""]) {
+        Log(LOG_E, @"Wake-on-LAN failed for host %@: MAC address is missing.", host.name);
+        return;
+    }
+
+    NSString *macRegex = @"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$";
+    NSPredicate *macTest = [NSPredicate predicateWithFormat:@"SELF MATCHES %@", macRegex];
+    if (![macTest evaluateWithObject:host.mac]) {
+        Log(LOG_E, @"Wake-on-LAN failed for host %@: MAC address '%@' has an invalid format.", host.name, host.mac);
+        return;
+    }
+
     NSData* wolPayload = [WakeOnLanManager createPayload:host];
     
     for (int i = 0; i < 6; i++) {
